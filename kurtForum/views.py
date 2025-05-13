@@ -1,3 +1,4 @@
+from django.contrib.auth.models import User
 from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from kurtForum import models
@@ -332,14 +333,19 @@ def admin(request):
 
         response = {'msg': '', 'status': False}
 
-        if admin_uid == 'guanliyuan' and admin_pwd == '123456':
-            # 管理员登录成功
-            response['status'] = True
-            request.session['admin_uid'] = 'guanliyuan'
-            return HttpResponse(json.dumps(response))
-        else:
-            response['msg'] = '用户名或者密码错误'
-            return HttpResponse(json.dumps(response))
+        # 参考login方法，从数据库验证管理员
+        try:
+            user = User.objects.get(username=admin_uid, is_superuser=True)
+            if user.check_password(admin_pwd):  # 实际项目中应使用check_password
+                response['status'] = True
+                request.session['admin_uid'] = admin_uid
+            else:
+                response['msg'] = '用户名或密码错误'
+        except models.User.DoesNotExist:
+            response['msg'] = '管理员账户不存在'
+
+        return HttpResponse(json.dumps(response))
+
 
 
 # 公告管理
